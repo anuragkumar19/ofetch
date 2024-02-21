@@ -34,24 +34,39 @@ export type ExtendedFetchRequest =
 export interface $Fetch<
   DefaultT = unknown,
   DefaultR extends ExtendedFetchRequest = ExtendedFetchRequest,
+  DefaultQ = Record<string, any>,
+  DefaultB = any,
+  DefaultP = Record<string, any>,
 > {
   <
     T = DefaultT,
     R extends ExtendedFetchRequest = DefaultR,
     M extends ExtractedRouteMethod<R> = ExtractedRouteMethod<R>,
-    Q extends TypedInternalQuery<
+    Q extends TypedInternalQuery<R, DefaultQ, M> = TypedInternalQuery<
       R,
-      Record<string, any>,
+      DefaultQ,
       M
-    > = TypedInternalQuery<R, Record<string, any>, M>,
+    >,
+    B extends TypedInternalBody<R, DefaultB, M> = TypedInternalBody<
+      R,
+      DefaultB,
+      M
+    >,
+    P extends TypedInternalParams<R, DefaultP, M> = TypedInternalParams<
+      R,
+      DefaultP,
+      M
+    >,
     S extends TypedInternalResponse<R, T, M> = TypedInternalResponse<R, T, M>,
   >(
     request: R,
     opts?: FetchOptions<
       "json",
       {
-        method: M | Uppercase<M>;
+        method: Uppercase<M> | M;
         query: Q;
+        body: B;
+        params: P;
       }
     >
   ): Promise<S>;
@@ -62,10 +77,8 @@ export interface $Fetch<
     S extends TypedInternalResponse<R, T, M> = TypedInternalResponse<R, T, M>,
   >(
     request: R,
-    opts?: FetchOptions<
-      "json",
-      { method: M; query: TypedInternalQuery<R, Record<string, any>, M> }
-    >
+    opts?: FetchOptions<"json">
+    // { method: M; query: TypedInternalQuery<R, Record<string, any>, M> }
   ): Promise<FetchResponse<S>>;
   create<T = DefaultT, R extends ExtendedFetchRequest = DefaultR>(
     defaults: FetchOptions
@@ -91,7 +104,7 @@ export interface FetchContext<T = any, R extends ResponseType = ResponseType> {
 export interface FetchOptions<
   R extends ResponseType = ResponseType,
   // eslint-disable-next-line @typescript-eslint/ban-types
-  O extends FetchOptions = {},
+  O extends object = {},
 > extends Omit<RequestInit, "body"> {
   method?: O extends { method: infer M } ? M : RequestInit["method"];
   baseURL?: string;
@@ -232,43 +245,52 @@ export type TypedInternalQuery<
   Route,
   Default = unknown,
   Method extends RouterMethod = RouterMethod,
-> = Default extends string | boolean | number | null | void | object
-  ? // Allow user overrides
-    Default
-  : Route extends string
-    ? MiddlewareOf<Route, Method> extends never
-      ? MiddlewareOf<Route, "default"> extends never
-        ? // Bail if only types are Error or void (for example, from middleware)
-          Default
-        : MiddlewareOf<Route, "default"> extends { request: { query: infer T } }
-          ? T
-          : Default
-      : MiddlewareOf<Route, Method> extends { request: { query: infer T } }
+> = Route extends string
+  ? MiddlewareOf<Route, Method> extends undefined
+    ? MiddlewareOf<Route, "default"> extends undefined
+      ? // Bail if only types are Error or void (for example, from middleware)
+        Default
+      : MiddlewareOf<Route, "default"> extends { request: { query: infer T } }
         ? T
         : Default
-    : Default;
+    : MiddlewareOf<Route, Method> extends { request: { query: infer T } }
+      ? T
+      : Default
+  : Default;
 
-// export type TypedInternalBody<
-//   Route,
-//   Default = unknown,
-//   Method extends RouterMethod = RouterMethod,
-// > = Default extends string | boolean | number | null | void | object
-//   ? // Allow user overrides
-//     Default
-//   : Route extends string
-//     ? MiddlewareOf<Route, Method> extends never
-//       ? MiddlewareOf<Route, "default"> extends never
-//         ? // Bail if only types are Error or void (for example, from middleware)
-//           Default
-//         : MiddlewareOf<Route, "default"> extends {
-//               body: infer T;
-//             }
-//           ? T
-//           : Default
-//       : MiddlewareOf<Route, Method> extends { body: infer T }
-//         ? T
-//         : Default
-//     : Default;
+export type TypedInternalBody<
+  Route,
+  Default = unknown,
+  Method extends RouterMethod = RouterMethod,
+> = Route extends string
+  ? MiddlewareOf<Route, Method> extends undefined
+    ? MiddlewareOf<Route, "default"> extends undefined
+      ? // Bail if only types are Error or void (for example, from middleware)
+        Default
+      : MiddlewareOf<Route, "default"> extends { request: { body: infer T } }
+        ? T
+        : Default
+    : MiddlewareOf<Route, Method> extends { request: { body: infer T } }
+      ? T
+      : Default
+  : Default;
+
+export type TypedInternalParams<
+  Route,
+  Default = unknown,
+  Method extends RouterMethod = RouterMethod,
+> = Route extends string
+  ? MiddlewareOf<Route, Method> extends undefined
+    ? MiddlewareOf<Route, "default"> extends undefined
+      ? // Bail if only types are Error or void (for example, from middleware)
+        Default
+      : MiddlewareOf<Route, "default"> extends { request: { params: infer T } }
+        ? T
+        : Default
+    : MiddlewareOf<Route, Method> extends { request: { params: infer T } }
+      ? T
+      : Default
+  : Default;
 
 // Extracts the available http methods based on the route.
 // Defaults to all methods if there aren't any methods available or if there is a catch-all route.

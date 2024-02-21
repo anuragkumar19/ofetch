@@ -9,6 +9,15 @@ async function main() {
   const a = $fetch("/api/v1", {
     //  ^?
     method: "post",
+    query: {
+      limit: 0,
+    },
+    body: {
+      text: "",
+    },
+    params: {
+      id: "",
+    },
   });
 
   // const res = await $fetch("/api/v1/me", { method: "get" });
