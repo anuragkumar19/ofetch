@@ -4,7 +4,10 @@
 
 export interface InternalApi {
   "/api/v1": {
-    get: { response: { user: string; method: "get" } };
+    get: {
+      response: { user: string; method: "get" };
+      request: { body: { name: string } };
+    };
     post: {
       response: { user: string; method: "post" };
       request: {
@@ -41,29 +44,35 @@ export interface $Fetch<
   <
     T = DefaultT,
     R extends ExtendedFetchRequest = DefaultR,
-    M extends ExtractedRouteMethod<R> = ExtractedRouteMethod<R>,
-    Q extends TypedInternalQuery<R, DefaultQ, M> = TypedInternalQuery<
+    M extends ExtractedRouteMethod<R> | Uppercase<ExtractedRouteMethod<R>> =
+      | ExtractedRouteMethod<R>
+      | Uppercase<ExtractedRouteMethod<R>>,
+    Q extends TypedInternalQuery<
       R,
       DefaultQ,
-      M
-    >,
-    B extends TypedInternalBody<R, DefaultB, M> = TypedInternalBody<
+      Lowercase<M>
+    > = TypedInternalQuery<R, DefaultQ, Lowercase<M>>,
+    B extends TypedInternalBody<R, DefaultB, Lowercase<M>> = TypedInternalBody<
       R,
       DefaultB,
-      M
+      Lowercase<M>
     >,
-    P extends TypedInternalParams<R, DefaultP, M> = TypedInternalParams<
+    P extends TypedInternalParams<
       R,
       DefaultP,
-      M
+      Lowercase<M>
+    > = TypedInternalParams<R, DefaultP, Lowercase<M>>,
+    S extends TypedInternalResponse<R, T, Lowercase<M>> = TypedInternalResponse<
+      R,
+      T,
+      Lowercase<M>
     >,
-    S extends TypedInternalResponse<R, T, M> = TypedInternalResponse<R, T, M>,
   >(
     request: R,
     opts?: FetchOptions<
       "json",
       {
-        method: Uppercase<M> | M;
+        method: M;
         query: Q;
         body: B;
         params: P;
@@ -320,7 +329,9 @@ export type ExtractedRouteMethod<R extends ExtendedFetchRequest> =
   R extends keyof InternalApi
     ? keyof InternalApi[R] extends RouterMethod
       ? keyof InternalApi[R]
-      : "get"
+      : keyof InternalApi[R] extends "default"
+        ? RouterMethod
+        : "get"
     : RouterMethod;
 
 type MatchResult<
