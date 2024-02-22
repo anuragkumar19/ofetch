@@ -76,7 +76,7 @@ export interface $Fetch<
   >(
     request: R,
     opts?: FetchOptions<
-      "json",
+      "json", // TODO: default it to JSON for now
       {
         method: M;
         query: Q;
