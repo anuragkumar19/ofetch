@@ -82,14 +82,42 @@ export interface $Fetch<
   raw<
     T = DefaultT,
     R extends ExtendedFetchRequest = DefaultR,
-    M extends ExtractedRouteMethod<R> = ExtractedRouteMethod<R>,
-    S extends TypedInternalResponse<R, T, M> = TypedInternalResponse<R, T, M>,
+    M extends ExtractedRouteMethod<R> | Uppercase<ExtractedRouteMethod<R>> =
+      | ExtractedRouteMethod<R>
+      | Uppercase<ExtractedRouteMethod<R>>,
+    Q extends TypedInternalQuery<
+      R,
+      DefaultQ,
+      Lowercase<M>
+    > = TypedInternalQuery<R, DefaultQ, Lowercase<M>>,
+    B extends TypedInternalBody<R, DefaultB, Lowercase<M>> = TypedInternalBody<
+      R,
+      DefaultB,
+      Lowercase<M>
+    >,
+    P extends TypedInternalParams<
+      R,
+      DefaultP,
+      Lowercase<M>
+    > = TypedInternalParams<R, DefaultP, Lowercase<M>>,
+    S extends TypedInternalResponse<R, T, Lowercase<M>> = TypedInternalResponse<
+      R,
+      T,
+      Lowercase<M>
+    >,
   >(
     request: R,
-    opts?: FetchOptions<"json">
-    // { method: M; query: TypedInternalQuery<R, Record<string, any>, M> }
+    opts?: FetchOptions<
+      "json",
+      {
+        method: M;
+        query: Q;
+        body: B;
+        params: P;
+      }
+    >
   ): Promise<FetchResponse<S>>;
-  create<T = DefaultT, R extends ExtendedFetchRequest = DefaultR>(
+  create<T = DefaultT, R extends ExtendedFetchRequest = DefaultR>( // TODO: allow to pass internal API
     defaults: FetchOptions
   ): $Fetch<T, R>;
 }
@@ -98,10 +126,15 @@ export interface $Fetch<
 // Context
 // --------------------------
 
-export interface FetchContext<T = any, R extends ResponseType = ResponseType> {
+export interface FetchContext<
+  T = any,
+  R extends ResponseType = ResponseType,
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  O extends object = {},
+> {
   request: FetchRequest;
   // eslint-disable-next-line no-use-before-define
-  options: FetchOptions<R>;
+  options: FetchOptions<R, O>;
   response?: FetchResponse<T>;
   error?: Error;
 }
@@ -142,15 +175,15 @@ export interface FetchOptions<
   /** Default is [408, 409, 425, 429, 500, 502, 503, 504] */
   retryStatusCodes?: number[];
 
-  onRequest?(context: FetchContext): Promise<void> | void;
+  onRequest?(context: FetchContext<any, R, O>): Promise<void> | void;
   onRequestError?(
-    context: FetchContext & { error: Error }
+    context: FetchContext<any, R, O> & { error: Error }
   ): Promise<void> | void;
   onResponse?(
-    context: FetchContext & { response: FetchResponse<R> }
+    context: FetchContext<any, R, O> & { response: FetchResponse<R> }
   ): Promise<void> | void;
   onResponseError?(
-    context: FetchContext & { response: FetchResponse<R> }
+    context: FetchContext<any, R, O> & { response: FetchResponse<R> }
   ): Promise<void> | void;
 }
 
