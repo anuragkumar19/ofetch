@@ -2,38 +2,6 @@
 // $fetch API
 // --------------------------
 
-export interface InternalApi {
-  "/api/v1": {
-    get: {
-      response: { user: string; method: "get" };
-      request: { body: { name: string } };
-    };
-    post: {
-      response: { user: string; method: "post" };
-      request: {
-        query: {
-          limit: number;
-        };
-        body: {
-          text: string;
-        };
-        params: {
-          id: string;
-        };
-      };
-    };
-  };
-  "/api/v1/me": {
-    default: { response: { ram: string } };
-  };
-}
-
-export type ExtendedFetchRequest =
-  | keyof InternalApi // Don't remove underscore prefixed path in ofetch, need to be discussed
-  | Exclude<FetchRequest, string>
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  | (string & {});
-
 export interface $Fetch<
   DefaultT = unknown,
   DefaultR extends ExtendedFetchRequest = ExtendedFetchRequest,
@@ -70,7 +38,7 @@ export interface $Fetch<
   >(
     request: R,
     opts?: FetchOptions<
-      "json",
+      "json", // TODO: default it to JSON for now
       {
         method: M;
         query: Q;
@@ -121,6 +89,42 @@ export interface $Fetch<
     defaults: FetchOptions
   ): $Fetch<T, R>;
 }
+
+// --------------------------
+// Internal API
+// --------------------------
+
+export interface InternalApi {
+  "/api/v1": {
+    get: {
+      response: { user: string; method: "get" };
+      request: { body: { name: string } };
+    };
+    post: {
+      response: { user: string; method: "post" };
+      request: {
+        query: {
+          limit: number;
+        };
+        body: {
+          text: string;
+        };
+        params: {
+          id: string;
+        };
+      };
+    };
+  };
+  "/api/v1/me": {
+    default: { response: { ram: string } };
+  };
+}
+
+export type ExtendedFetchRequest =
+  | keyof InternalApi // Don't remove underscore prefixed path in ofetch, need to be discussed
+  | Exclude<FetchRequest, string>
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  | (string & {});
 
 // --------------------------
 // Context
