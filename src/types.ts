@@ -4,7 +4,8 @@
 
 export interface $Fetch<
   DefaultT = unknown,
-  DefaultR extends ExtendedFetchRequest = ExtendedFetchRequest,
+  A extends object = InternalApi,
+  DefaultR extends ExtendedFetchRequest<A> = ExtendedFetchRequest<A>,
   DefaultQ = Record<string, any>,
   DefaultB = any,
   DefaultP = Record<string, any>,
@@ -12,30 +13,36 @@ export interface $Fetch<
   <
     T = DefaultT,
     ResT extends ResponseType = "json",
-    R extends ExtendedFetchRequest = DefaultR,
-    M extends ExtractedRouteMethod<R> | Uppercase<ExtractedRouteMethod<R>> =
-      | ExtractedRouteMethod<R>
-      | Uppercase<ExtractedRouteMethod<R>>,
+    R extends ExtendedFetchRequest<A> = DefaultR,
+    M extends
+      | ExtractedRouteMethod<A, R>
+      | Uppercase<ExtractedRouteMethod<A, R>> =
+      | ExtractedRouteMethod<A, R>
+      | Uppercase<ExtractedRouteMethod<A, R>>,
     Q extends TypedInternalQuery<
       R,
+      A,
       DefaultQ,
       Lowercase<M>
-    > = TypedInternalQuery<R, DefaultQ, Lowercase<M>>,
-    B extends TypedInternalBody<R, DefaultB, Lowercase<M>> = TypedInternalBody<
+    > = TypedInternalQuery<R, A, DefaultQ, Lowercase<M>>,
+    B extends TypedInternalBody<
       R,
+      A,
       DefaultB,
       Lowercase<M>
-    >,
+    > = TypedInternalBody<R, A, DefaultB, Lowercase<M>>,
     P extends TypedInternalParams<
       R,
+      A,
       DefaultP,
       Lowercase<M>
-    > = TypedInternalParams<R, DefaultP, Lowercase<M>>,
-    S extends TypedInternalResponse<R, T, Lowercase<M>> = TypedInternalResponse<
+    > = TypedInternalParams<R, A, DefaultP, Lowercase<M>>,
+    S extends TypedInternalResponse<
       R,
+      A,
       T,
       Lowercase<M>
-    >,
+    > = TypedInternalResponse<R, A, T, Lowercase<M>>,
   >(
     request: R,
     opts?: FetchOptions<
@@ -51,30 +58,36 @@ export interface $Fetch<
   raw<
     T = DefaultT,
     ResT extends ResponseType = "json",
-    R extends ExtendedFetchRequest = DefaultR,
-    M extends ExtractedRouteMethod<R> | Uppercase<ExtractedRouteMethod<R>> =
-      | ExtractedRouteMethod<R>
-      | Uppercase<ExtractedRouteMethod<R>>,
+    R extends ExtendedFetchRequest<A> = DefaultR,
+    M extends
+      | ExtractedRouteMethod<A, R>
+      | Uppercase<ExtractedRouteMethod<A, R>> =
+      | ExtractedRouteMethod<A, R>
+      | Uppercase<ExtractedRouteMethod<A, R>>,
     Q extends TypedInternalQuery<
       R,
+      A,
       DefaultQ,
       Lowercase<M>
-    > = TypedInternalQuery<R, DefaultQ, Lowercase<M>>,
-    B extends TypedInternalBody<R, DefaultB, Lowercase<M>> = TypedInternalBody<
+    > = TypedInternalQuery<R, A, DefaultQ, Lowercase<M>>,
+    B extends TypedInternalBody<
       R,
+      A,
       DefaultB,
       Lowercase<M>
-    >,
+    > = TypedInternalBody<R, A, DefaultB, Lowercase<M>>,
     P extends TypedInternalParams<
       R,
+      A,
       DefaultP,
       Lowercase<M>
-    > = TypedInternalParams<R, DefaultP, Lowercase<M>>,
-    S extends TypedInternalResponse<R, T, Lowercase<M>> = TypedInternalResponse<
+    > = TypedInternalParams<R, A, DefaultP, Lowercase<M>>,
+    S extends TypedInternalResponse<
       R,
+      A,
       T,
       Lowercase<M>
-    >,
+    > = TypedInternalResponse<R, A, T, Lowercase<M>>,
   >(
     request: R,
     opts?: FetchOptions<
@@ -87,9 +100,13 @@ export interface $Fetch<
       }
     >
   ): Promise<FetchResponse<S>>;
-  create<T = DefaultT, R extends ExtendedFetchRequest = DefaultR>( // TODO: allow to pass internal API
+  create<
+    T = DefaultT,
+    A extends object = InternalApi,
+    R extends ExtendedFetchRequest<A> = ExtendedFetchRequest<A>,
+  >(
     defaults: FetchOptions
-  ): $Fetch<T, R>;
+  ): $Fetch<T, A, R>;
 }
 
 // --------------------------
@@ -122,8 +139,8 @@ export interface InternalApi {
   };
 }
 
-export type ExtendedFetchRequest =
-  | keyof InternalApi // Don't remove underscore prefixed path in ofetch, need to be discussed
+export type ExtendedFetchRequest<A extends object> =
+  | keyof A // Don't remove underscore prefixed path in ofetch, need to be discussed
   | Exclude<FetchRequest, string>
   // eslint-disable-next-line @typescript-eslint/ban-types
   | (string & {});
@@ -271,88 +288,95 @@ export type RouterMethod = Lowercase<HTTPMethod>;
 // An interface to extend in a local project
 export type TypedInternalResponse<
   Route,
+  A extends object,
   Default = unknown,
   Method extends RouterMethod = RouterMethod,
 > = Default extends string | boolean | number | null | void | object
   ? // Allow user overrides
     Default
   : Route extends string
-    ? MiddlewareOf<Route, Method> extends never
-      ? MiddlewareOf<Route, "default"> extends never
+    ? MiddlewareOf<Route, Method, A> extends never
+      ? MiddlewareOf<Route, "default", A> extends never
         ? // Bail if only types are Error or void (for example, from middleware)
           Default
-        : MiddlewareOf<Route, "default"> extends { response: infer T }
+        : MiddlewareOf<Route, "default", A> extends { response: infer T }
           ? T
           : Default
-      : MiddlewareOf<Route, Method> extends { response: infer T }
+      : MiddlewareOf<Route, Method, A> extends { response: infer T }
         ? T
         : Default
     : Default;
 
 export type TypedInternalQuery<
   Route,
+  A extends object,
   Default = unknown,
   Method extends RouterMethod = RouterMethod,
 > = Route extends string
-  ? MiddlewareOf<Route, Method> extends undefined
-    ? MiddlewareOf<Route, "default"> extends undefined
+  ? MiddlewareOf<Route, Method, A> extends undefined
+    ? MiddlewareOf<Route, "default", A> extends undefined
       ? // Bail if only types are Error or void (for example, from middleware)
         Default
-      : MiddlewareOf<Route, "default"> extends { request: { query: infer T } }
+      : MiddlewareOf<Route, "default", A> extends {
+            request: { query: infer T };
+          }
         ? T
         : Default
-    : MiddlewareOf<Route, Method> extends { request: { query: infer T } }
+    : MiddlewareOf<Route, Method, A> extends { request: { query: infer T } }
       ? T
       : Default
   : Default;
 
 export type TypedInternalBody<
   Route,
+  A extends object,
   Default = unknown,
   Method extends RouterMethod = RouterMethod,
 > = Route extends string
-  ? MiddlewareOf<Route, Method> extends undefined
-    ? MiddlewareOf<Route, "default"> extends undefined
+  ? MiddlewareOf<Route, Method, A> extends undefined
+    ? MiddlewareOf<Route, "default", A> extends undefined
       ? // Bail if only types are Error or void (for example, from middleware)
         Default
-      : MiddlewareOf<Route, "default"> extends { request: { body: infer T } }
+      : MiddlewareOf<Route, "default", A> extends { request: { body: infer T } }
         ? T
         : Default
-    : MiddlewareOf<Route, Method> extends { request: { body: infer T } }
+    : MiddlewareOf<Route, Method, A> extends { request: { body: infer T } }
       ? T
       : Default
   : Default;
 
 export type TypedInternalParams<
   Route,
+  A extends object,
   Default = unknown,
   Method extends RouterMethod = RouterMethod,
 > = Route extends string
-  ? MiddlewareOf<Route, Method> extends undefined
-    ? MiddlewareOf<Route, "default"> extends undefined
+  ? MiddlewareOf<Route, Method, A> extends undefined
+    ? MiddlewareOf<Route, "default", A> extends undefined
       ? // Bail if only types are Error or void (for example, from middleware)
         Default
-      : MiddlewareOf<Route, "default"> extends { request: { params: infer T } }
+      : MiddlewareOf<Route, "default", A> extends {
+            request: { params: infer T };
+          }
         ? T
         : Default
-    : MiddlewareOf<Route, Method> extends { request: { params: infer T } }
+    : MiddlewareOf<Route, Method, A> extends { request: { params: infer T } }
       ? T
       : Default
   : Default;
 
 // Extracts the available http methods based on the route.
 // Defaults to all methods if there aren't any methods available or if there is a catch-all route.
-export type AvailableRouterMethod<R extends ExtendedFetchRequest> =
-  R extends string
-    ? keyof InternalApi[MatchedRoutes<R>] extends undefined
-      ? RouterMethod
-      : Extract<
-            keyof InternalApi[MatchedRoutes<R>],
-            "default"
-          > extends undefined
-        ? Extract<RouterMethod, keyof InternalApi[MatchedRoutes<R>]>
-        : RouterMethod
-    : RouterMethod;
+export type AvailableRouterMethod<
+  A extends object,
+  R extends ExtendedFetchRequest<A>,
+> = R extends string
+  ? keyof A[MatchedRoutes<R, A>] extends undefined
+    ? RouterMethod
+    : Extract<keyof A[MatchedRoutes<R, A>], "default"> extends undefined
+      ? Extract<RouterMethod, keyof A[MatchedRoutes<R, A>]>
+      : RouterMethod
+  : RouterMethod;
 
 // Argumented fetch options to include the correct request methods.
 // This overrides the default, which is only narrowed to a string.
@@ -364,14 +388,16 @@ export type AvailableRouterMethod<R extends ExtendedFetchRequest> =
 // }
 
 // Extract the route method from options which might be undefined or without a method parameter.
-export type ExtractedRouteMethod<R extends ExtendedFetchRequest> =
-  R extends keyof InternalApi
-    ? keyof InternalApi[R] extends RouterMethod
-      ? keyof InternalApi[R]
-      : keyof InternalApi[R] extends "default"
-        ? RouterMethod
-        : "get"
-    : RouterMethod;
+export type ExtractedRouteMethod<
+  A extends object,
+  R extends ExtendedFetchRequest<A>,
+> = R extends keyof A
+  ? keyof A[R] extends RouterMethod
+    ? keyof A[R]
+    : keyof A[R] extends "default"
+      ? RouterMethod
+      : "get"
+  : RouterMethod;
 
 type MatchResult<
   Key extends string,
@@ -431,8 +457,9 @@ type CalcMatchScore<
 
 type _MatchedRoutes<
   Route extends string,
+  A extends object,
   MatchedResultUnion extends MatchResult<string> = MatchResult<
-    keyof InternalApi
+    Exclude<Exclude<keyof A, number>, symbol>
   >,
 > = MatchedResultUnion["key"] extends infer MatchedKeys // spread union type
   ? MatchedKeys extends string
@@ -458,15 +485,17 @@ type _MatchedRoutes<
 
 export type MatchedRoutes<
   Route extends string,
+  A extends object,
   MatchedKeysResult extends MatchResult<string> = MatchResult<
-    keyof InternalApi
+    Exclude<Exclude<keyof A, number>, symbol>
   >,
   Matches extends MatchResult<string> = _MatchedRoutes<
     Route,
+    A,
     MatchedKeysResult
   >,
 > = Route extends "/"
-  ? keyof InternalApi // root middleware
+  ? keyof A // root middleware
   : Extract<Matches, { exact: true }> extends never
     ?
         | Extract<
@@ -486,6 +515,7 @@ export type KebabCase<
 export type MiddlewareOf<
   Route extends string,
   Method extends RouterMethod | "default",
-> = Method extends keyof InternalApi[MatchedRoutes<Route>]
-  ? Exclude<InternalApi[MatchedRoutes<Route>][Method], Error | void>
+  A extends object,
+> = Method extends keyof A[MatchedRoutes<Route, A>]
+  ? Exclude<A[MatchedRoutes<Route, A>][Method], Error | void>
   : never;
