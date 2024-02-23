@@ -11,6 +11,7 @@ export interface $Fetch<
 > {
   <
     T = DefaultT,
+    ResT extends ResponseType = "json",
     R extends ExtendedFetchRequest = DefaultR,
     M extends ExtractedRouteMethod<R> | Uppercase<ExtractedRouteMethod<R>> =
       | ExtractedRouteMethod<R>
@@ -38,7 +39,7 @@ export interface $Fetch<
   >(
     request: R,
     opts?: FetchOptions<
-      "json", // TODO: default it to JSON for now
+      ResT,
       {
         method: M;
         query: Q;
@@ -49,6 +50,7 @@ export interface $Fetch<
   ): Promise<S>;
   raw<
     T = DefaultT,
+    ResT extends ResponseType = "json",
     R extends ExtendedFetchRequest = DefaultR,
     M extends ExtractedRouteMethod<R> | Uppercase<ExtractedRouteMethod<R>> =
       | ExtractedRouteMethod<R>
@@ -76,7 +78,7 @@ export interface $Fetch<
   >(
     request: R,
     opts?: FetchOptions<
-      "json", // TODO: default it to JSON for now
+      ResT,
       {
         method: M;
         query: Q;
@@ -132,13 +134,13 @@ export type ExtendedFetchRequest =
 
 export interface FetchContext<
   T = any,
-  R extends ResponseType = ResponseType,
+  ResT extends ResponseType = ResponseType,
   // eslint-disable-next-line @typescript-eslint/ban-types
   O extends object = {},
 > {
   request: FetchRequest;
   // eslint-disable-next-line no-use-before-define
-  options: FetchOptions<R, O>;
+  options: FetchOptions<ResT, O>;
   response?: FetchResponse<T>;
   error?: Error;
 }
@@ -148,7 +150,7 @@ export interface FetchContext<
 // --------------------------
 
 export interface FetchOptions<
-  R extends ResponseType = ResponseType,
+  ResT extends ResponseType = ResponseType,
   // eslint-disable-next-line @typescript-eslint/ban-types
   O extends object = {},
 > extends Omit<RequestInit, "body"> {
@@ -161,7 +163,7 @@ export interface FetchOptions<
   params?: O extends { params: infer P } ? P : Record<string, any>;
   query?: O extends { query: infer Q } ? Q : Record<string, any>;
   parseResponse?: (responseText: string) => any;
-  responseType?: R;
+  responseType?: ResT;
 
   /**
    * @experimental Set to "half" to enable duplex streaming.
@@ -179,15 +181,15 @@ export interface FetchOptions<
   /** Default is [408, 409, 425, 429, 500, 502, 503, 504] */
   retryStatusCodes?: number[];
 
-  onRequest?(context: FetchContext<any, R, O>): Promise<void> | void;
+  onRequest?(context: FetchContext<any, ResT, O>): Promise<void> | void;
   onRequestError?(
-    context: FetchContext<any, R, O> & { error: Error }
+    context: FetchContext<any, ResT, O> & { error: Error }
   ): Promise<void> | void;
   onResponse?(
-    context: FetchContext<any, R, O> & { response: FetchResponse<R> }
+    context: FetchContext<any, ResT, O> & { response: FetchResponse<ResT> }
   ): Promise<void> | void;
   onResponseError?(
-    context: FetchContext<any, R, O> & { response: FetchResponse<R> }
+    context: FetchContext<any, ResT, O> & { response: FetchResponse<ResT> }
   ): Promise<void> | void;
 }
 
@@ -218,9 +220,9 @@ export interface ResponseMap {
 export type ResponseType = keyof ResponseMap | "json";
 
 export type MappedResponseType<
-  R extends ResponseType,
+  ResT extends ResponseType,
   JsonType = any,
-> = R extends keyof ResponseMap ? ResponseMap[R] : JsonType;
+> = ResT extends keyof ResponseMap ? ResponseMap[ResT] : JsonType;
 
 export interface FetchResponse<T> extends Response {
   _data?: T;
