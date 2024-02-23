@@ -2,113 +2,69 @@
 // $fetch API
 // --------------------------
 
-// TODO: bug: if no method is passed return type for "get" not union of all
+/**
+ * TODO(s):
+ * 1. Force user to pass a method when M doesn't include "get" or "default"
+ * 2. Return response type for "get" method if no method is passed by user instead of union of all possible response
+ * Note: The above two bugs are not specific to my version. It is also present in Nitro's current implementation
+ * 3. Discuss weather we should force user to include a body/query/params + options if types for them are present
+ * 4. Too much generics uses making types unreadable while hovering. Discuss ways to fix it.
+ * 5. Types are too complex we should write tests for them (Currently I am writing test for old version to insure when new changes are merged nothing breaks)
+ */
 
-export interface $Fetch<
-  DefaultT = unknown,
-  A extends object = InternalApi,
-  DefaultR extends ExtendedFetchRequest<A> = ExtendedFetchRequest<A>,
-  DefaultQ = Record<string, any>,
-  DefaultB = any,
-  DefaultP = Record<string, any>,
-> {
+export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
   <
     T = DefaultT,
     ResT extends ResponseType = "json",
-    R extends ExtendedFetchRequest<A> = DefaultR,
+    R extends ExtendedFetchRequest<A> = ExtendedFetchRequest<A>,
     M extends
       | ExtractedRouteMethod<A, R>
       | Uppercase<ExtractedRouteMethod<A, R>> =
       | ExtractedRouteMethod<A, R>
       | Uppercase<ExtractedRouteMethod<A, R>>,
-    Q extends TypedInternalQuery<
-      R,
-      A,
-      DefaultQ,
-      Lowercase<M>
-    > = TypedInternalQuery<R, A, DefaultQ, Lowercase<M>>,
-    B extends TypedInternalBody<
-      R,
-      A,
-      DefaultB,
-      Lowercase<M>
-    > = TypedInternalBody<R, A, DefaultB, Lowercase<M>>,
-    P extends TypedInternalParams<
-      R,
-      A,
-      DefaultP,
-      Lowercase<M>
-    > = TypedInternalParams<R, A, DefaultP, Lowercase<M>>,
-    S extends TypedInternalResponse<
-      R,
-      A,
-      T,
-      Lowercase<M>
-    > = TypedInternalResponse<R, A, T, Lowercase<M>>,
   >(
     request: R,
     opts?: FetchOptions<
       ResT,
       {
         method: M;
-        query: Q;
-        body: B;
-        params: P;
+        query: TypedInternalQuery<R, A, Record<string, any>, Lowercase<M>>;
+        body: TypedInternalBody<R, A, any, Lowercase<M>>;
+        params: TypedInternalParams<R, A, Record<string, any>, Lowercase<M>>;
       }
     >
-  ): Promise<S>;
+  ): Promise<
+    MappedResponseType<ResT, TypedInternalResponse<R, A, T, Lowercase<M>>>
+  >;
   raw<
     T = DefaultT,
     ResT extends ResponseType = "json",
-    R extends ExtendedFetchRequest<A> = DefaultR,
+    R extends ExtendedFetchRequest<A> = ExtendedFetchRequest<A>,
     M extends
       | ExtractedRouteMethod<A, R>
       | Uppercase<ExtractedRouteMethod<A, R>> =
       | ExtractedRouteMethod<A, R>
       | Uppercase<ExtractedRouteMethod<A, R>>,
-    Q extends TypedInternalQuery<
-      R,
-      A,
-      DefaultQ,
-      Lowercase<M>
-    > = TypedInternalQuery<R, A, DefaultQ, Lowercase<M>>,
-    B extends TypedInternalBody<
-      R,
-      A,
-      DefaultB,
-      Lowercase<M>
-    > = TypedInternalBody<R, A, DefaultB, Lowercase<M>>,
-    P extends TypedInternalParams<
-      R,
-      A,
-      DefaultP,
-      Lowercase<M>
-    > = TypedInternalParams<R, A, DefaultP, Lowercase<M>>,
-    S extends TypedInternalResponse<
-      R,
-      A,
-      T,
-      Lowercase<M>
-    > = TypedInternalResponse<R, A, T, Lowercase<M>>,
   >(
     request: R,
     opts?: FetchOptions<
       ResT,
       {
         method: M;
-        query: Q;
-        body: B;
-        params: P;
+        query: TypedInternalQuery<R, A, Record<string, any>, Lowercase<M>>;
+        body: TypedInternalBody<R, A, any, Lowercase<M>>;
+        params: TypedInternalParams<R, A, Record<string, any>, Lowercase<M>>;
       }
     >
-  ): Promise<FetchResponse<S>>;
-  create<
-    T = DefaultT,
-    A extends object = InternalApi,
-    R extends ExtendedFetchRequest<A> = ExtendedFetchRequest<A>,
-  >(
+  ): Promise<
+    FetchResponse<
+      MappedResponseType<ResT, TypedInternalResponse<R, A, T, Lowercase<M>>>
+    >
+  >;
+  create<T = DefaultT, A extends object = InternalApi>(
     defaults: FetchOptions
-  ): $Fetch<T, A, R>;
+  ): $Fetch<T, A>;
+  native: Fetch;
 }
 
 // --------------------------
