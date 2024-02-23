@@ -2,6 +2,8 @@
 // $fetch API
 // --------------------------
 
+// TODO: bug: if no method is passed return type for "get" not union of all
+
 export interface $Fetch<
   DefaultT = unknown,
   A extends object = InternalApi,
@@ -136,6 +138,9 @@ export interface InternalApi {
   };
   "/api/v1/me": {
     default: { response: { ram: string } };
+  };
+  "api/v1/post": {
+    post: { response: { method: "post" } };
   };
 }
 
