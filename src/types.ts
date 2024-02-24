@@ -4,12 +4,14 @@
 
 /**
  * TODO(s):
- * 1. Force user to pass a method when M doesn't include "get" or "default"
+ * 1. Force user to pass a method when M doesn't include "get"
  * 2. Return response type for "get" method if no method is passed by user instead of union of all possible response
  * Note: The above two bugs are not specific to my version. It is also present in Nitro's current implementation
  * 3. Discuss weather we should force user to include a body/query/params + options if types for them are present
  * 4. Too much generics uses making types unreadable while hovering. Discuss ways to fix it.
  * 5. Types are too complex we should write tests for them (Currently I am writing test for old version to insure when new changes are merged nothing breaks)
+ * 6. Allow to override request type using generic
+ * 7. Don't remove underscore prefixed path in ofetch, need to be discussed
  */
 
 export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
@@ -72,6 +74,7 @@ export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
 // --------------------------
 
 export interface InternalApi {
+  // TODO: remove all of this
   "/api/v1": {
     get: {
       response: { user: string; method: "get" };
@@ -99,12 +102,6 @@ export interface InternalApi {
     post: { response: { method: "post" } };
   };
 }
-
-export type ExtendedFetchRequest<A extends object> =
-  | keyof A // Don't remove underscore prefixed path in ofetch, need to be discussed
-  | Exclude<FetchRequest, string>
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  | (string & {});
 
 // --------------------------
 // Context
@@ -229,9 +226,19 @@ export type Fetch = typeof globalThis.fetch;
 
 export type FetchRequest = RequestInfo;
 
+export type ExtendedFetchRequest<A extends object> =
+  | keyof A
+  | Exclude<FetchRequest, string>
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  | (string & {});
+
 export interface SearchParameters {
   [key: string]: any;
 }
+
+// --------------------------
+// Utility types
+// --------------------------
 
 export type HTTPMethod =
   | "GET"
@@ -271,7 +278,7 @@ export type TypedInternalResponse<
 export type TypedInternalQuery<
   Route,
   A extends object,
-  Default = unknown,
+  Default,
   Method extends RouterMethod = RouterMethod,
 > = Route extends string
   ? MiddlewareOf<Route, Method, A> extends undefined
@@ -291,7 +298,7 @@ export type TypedInternalQuery<
 export type TypedInternalBody<
   Route,
   A extends object,
-  Default = unknown,
+  Default,
   Method extends RouterMethod = RouterMethod,
 > = Route extends string
   ? MiddlewareOf<Route, Method, A> extends undefined
@@ -309,7 +316,7 @@ export type TypedInternalBody<
 export type TypedInternalParams<
   Route,
   A extends object,
-  Default = unknown,
+  Default,
   Method extends RouterMethod = RouterMethod,
 > = Route extends string
   ? MiddlewareOf<Route, Method, A> extends undefined
@@ -338,15 +345,6 @@ export type AvailableRouterMethod<
       ? Extract<RouterMethod, keyof A[MatchedRoutes<R, A>]>
       : RouterMethod
   : RouterMethod;
-
-// Argumented fetch options to include the correct request methods.
-// This overrides the default, which is only narrowed to a string.
-// export interface ExtendedFetchOptions<
-//   R extends ExtendedFetchRequest,
-//   M extends AvailableRouterMethod<R> = AvailableRouterMethod<R>,
-// > extends FetchOptions {
-//   method?: Uppercase<M> | M;
-// }
 
 // Extract the route method from options which might be undefined or without a method parameter.
 export type ExtractedRouteMethod<
