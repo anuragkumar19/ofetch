@@ -335,16 +335,16 @@ export type TypedInternalParams<
 
 // Extracts the available http methods based on the route.
 // Defaults to all methods if there aren't any methods available or if there is a catch-all route.
-export type AvailableRouterMethod<
-  A extends object,
-  R extends ExtendedFetchRequest<A>,
-> = R extends string
-  ? keyof A[MatchedRoutes<R, A>] extends undefined
-    ? RouterMethod
-    : Extract<keyof A[MatchedRoutes<R, A>], "default"> extends undefined
-      ? Extract<RouterMethod, keyof A[MatchedRoutes<R, A>]>
-      : RouterMethod
-  : RouterMethod;
+// export type AvailableRouterMethod<
+//   A extends object,
+//   R extends ExtendedFetchRequest<A>,
+// > = R extends string
+//   ? keyof A[MatchedRoutes<R, A>] extends undefined
+//     ? RouterMethod
+//     : Extract<keyof A[MatchedRoutes<R, A>], "default"> extends undefined
+//       ? Extract<RouterMethod, keyof A[MatchedRoutes<R, A>]>
+//       : RouterMethod
+//   : RouterMethod;
 
 // Extract the route method from options which might be undefined or without a method parameter.
 export type ExtractedRouteMethod<
@@ -353,9 +353,7 @@ export type ExtractedRouteMethod<
 > = R extends keyof A
   ? keyof A[R] extends RouterMethod
     ? keyof A[R]
-    : keyof A[R] extends "default"
-      ? RouterMethod
-      : "get"
+    : RouterMethod
   : RouterMethod;
 
 type MatchResult<
@@ -463,13 +461,6 @@ export type MatchedRoutes<
           >["key"]
         | Extract<Matches, { catchAll: true }>["key"] // partial, glob and catchAll matches
     : Extract<Matches, { exact: true }>["key"]; // exact matches
-
-export type KebabCase<
-  T extends string,
-  A extends string = "",
-> = T extends `${infer F}${infer R}`
-  ? KebabCase<R, `${A}${F extends Lowercase<F> ? "" : "-"}${Lowercase<F>}`>
-  : A;
 
 export type MiddlewareOf<
   Route extends string,
