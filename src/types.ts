@@ -225,12 +225,12 @@ export type TypedInternalResponse<
   : Route extends string
     ? Method extends keyof A[MatchedRoutes<Route, A>]
       ? A[MatchedRoutes<Route, A>][Method] extends { response: infer T }
-        ? T extends never
+        ? [T] extends [never]
           ? Default
           : T
         : Default
       : A[MatchedRoutes<Route, A>]["default"] extends { response: infer T }
-        ? T extends never
+        ? [T] extends [never]
           ? Default
           : T
         : Default
@@ -297,9 +297,9 @@ export type TypedInternalBody<
 export type ExtractedRouteMethod<
   A extends object,
   R extends ExtendedFetchRequest<A>,
-> = R extends keyof A
-  ? keyof A[R] extends RouterMethod
-    ? keyof A[R]
+> = R extends string
+  ? keyof A[MatchedRoutes<R, A>] extends RouterMethod
+    ? keyof A[MatchedRoutes<R, A>]
     : RouterMethod
   : RouterMethod;
 
