@@ -2,18 +2,6 @@
 // $fetch API
 // --------------------------
 
-/**
- * TODO(s):
- * 1. Force user to pass a method when M doesn't include "get"
- * 2. Return response type for "get" method if no method is passed by user instead of union of all possible response
- * Note: The above two bugs are not specific to my version. It is also present in Nitro's current implementation
- * 3. Discuss weather we should force user to include a body/query/params + options if types for them are present
- * 4. Too much generics uses making types unreadable while hovering. Discuss ways to fix it.
- * 5. Types are too complex we should write tests for them (Currently I am writing test for old version to insure when new changes are merged nothing breaks)
- * 6. Allow to override request type using generic
- * 7. Don't remove underscore prefixed path in ofetch, need to be discussed
- */
-
 export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
   <
     T = DefaultT,
@@ -73,35 +61,7 @@ export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
 // Internal API
 // --------------------------
 
-export interface InternalApi {
-  // TODO: remove all of this
-  "/api/v1": {
-    get: {
-      response: void;
-      request: { body: { name: string } };
-    };
-    post: {
-      response: never;
-      request: {
-        query: {
-          limit: number;
-        };
-        body: {
-          text: string;
-        };
-        params: {
-          id: string;
-        };
-      };
-    };
-  };
-  "/api/v1/me": {
-    default: { response: { ram: string } };
-  };
-  "api/v1/post": {
-    post: { response: { method: "post" } };
-  };
-}
+export interface InternalApi {}
 
 // --------------------------
 // Context
@@ -281,20 +241,18 @@ export type TypedInternalQuery<
   A extends object,
   Default,
   Method extends RouterMethod = RouterMethod,
-> = Default extends Record<string, any>
-  ? Route extends string
-    ? Method extends keyof A[MatchedRoutes<Route, A>]
-      ? A[MatchedRoutes<Route, A>][Method] extends {
+> = Route extends string
+  ? Method extends keyof A[MatchedRoutes<Route, A>]
+    ? A[MatchedRoutes<Route, A>][Method] extends {
+        request: { query: infer T };
+      }
+      ? T
+      : Default
+    : A[MatchedRoutes<Route, A>]["default"] extends {
           request: { query: infer T };
         }
-        ? T
-        : Default
-      : A[MatchedRoutes<Route, A>]["default"] extends {
-            request: { query: infer T };
-          }
-        ? T
-        : Default
-    : Default
+      ? T
+      : Default
   : Default;
 
 export type TypedInternalParams<
@@ -302,20 +260,18 @@ export type TypedInternalParams<
   A extends object,
   Default,
   Method extends RouterMethod = RouterMethod,
-> = Default extends Record<string, any>
-  ? Route extends string
-    ? Method extends keyof A[MatchedRoutes<Route, A>]
-      ? A[MatchedRoutes<Route, A>][Method] extends {
+> = Route extends string
+  ? Method extends keyof A[MatchedRoutes<Route, A>]
+    ? A[MatchedRoutes<Route, A>][Method] extends {
+        request: { params: infer T };
+      }
+      ? T
+      : Default
+    : A[MatchedRoutes<Route, A>]["default"] extends {
           request: { params: infer T };
         }
-        ? T
-        : Default
-      : A[MatchedRoutes<Route, A>]["default"] extends {
-            request: { params: infer T };
-          }
-        ? T
-        : Default
-    : Default
+      ? T
+      : Default
   : Default;
 
 export type TypedInternalBody<
@@ -336,19 +292,6 @@ export type TypedInternalBody<
       ? T
       : Default
   : Default;
-
-// Extracts the available http methods based on the route.
-// Defaults to all methods if there aren't any methods available or if there is a catch-all route.
-// export type AvailableRouterMethod<
-//   A extends object,
-//   R extends ExtendedFetchRequest<A>,
-// > = R extends string
-//   ? keyof A[MatchedRoutes<R, A>] extends undefined
-//     ? RouterMethod
-//     : Extract<keyof A[MatchedRoutes<R, A>], "default"> extends undefined
-//       ? Extract<RouterMethod, keyof A[MatchedRoutes<R, A>]>
-//       : RouterMethod
-//   : RouterMethod;
 
 // Extract the route method from options which might be undefined or without a method parameter.
 export type ExtractedRouteMethod<
