@@ -31,8 +31,8 @@ export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
       {
         method: M;
         query: TypedInternalQuery<R, A, Record<string, any>, Lowercase<M>>;
-        // body: TypedInternalBody<R, A, any, Lowercase<M>>;
-        // params: TypedInternalParams<R, A, Record<string, any>, Lowercase<M>>;
+        body: TypedInternalBody<R, A, any, Lowercase<M>>;
+        params: TypedInternalParams<R, A, Record<string, any>, Lowercase<M>>;
       }
     >
   ): Promise<
@@ -54,8 +54,8 @@ export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
       {
         method: M;
         query: TypedInternalQuery<R, A, Record<string, any>, Lowercase<M>>;
-        // body: TypedInternalBody<R, A, any, Lowercase<M>>;
-        // params: TypedInternalParams<R, A, Record<string, any>, Lowercase<M>>;
+        body: TypedInternalBody<R, A, any, Lowercase<M>>;
+        params: TypedInternalParams<R, A, Record<string, any>, Lowercase<M>>;
       }
     >
   ): Promise<
@@ -321,24 +321,21 @@ export type TypedInternalParams<
 export type TypedInternalBody<
   Route,
   A extends object,
-  Default = unknown,
+  Default,
   Method extends RouterMethod = RouterMethod,
-> = Default extends string | boolean | number | null | void | object
-  ? // Allow user overrides
-    Default
-  : Route extends string
-    ? Method extends keyof A[MatchedRoutes<Route, A>]
-      ? A[MatchedRoutes<Route, A>][Method] extends {
+> = Route extends string
+  ? Method extends keyof A[MatchedRoutes<Route, A>]
+    ? A[MatchedRoutes<Route, A>][Method] extends {
+        request: { body: infer T };
+      }
+      ? T
+      : Default
+    : A[MatchedRoutes<Route, A>]["default"] extends {
           request: { body: infer T };
         }
-        ? T
-        : Default
-      : A[MatchedRoutes<Route, A>]["default"] extends {
-            request: { body: infer T };
-          }
-        ? T
-        : Default
-    : Default;
+      ? T
+      : Default
+  : Default;
 
 // Extracts the available http methods based on the route.
 // Defaults to all methods if there aren't any methods available or if there is a catch-all route.
