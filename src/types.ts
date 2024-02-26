@@ -31,8 +31,8 @@ export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
       {
         method: M;
         query: TypedInternalQuery<R, A, Record<string, any>, Lowercase<M>>;
-        body: TypedInternalBody<R, A, any, Lowercase<M>>;
-        params: TypedInternalParams<R, A, Record<string, any>, Lowercase<M>>;
+        // body: TypedInternalBody<R, A, any, Lowercase<M>>;
+        // params: TypedInternalParams<R, A, Record<string, any>, Lowercase<M>>;
       }
     >
   ): Promise<
@@ -54,8 +54,8 @@ export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
       {
         method: M;
         query: TypedInternalQuery<R, A, Record<string, any>, Lowercase<M>>;
-        body: TypedInternalBody<R, A, any, Lowercase<M>>;
-        params: TypedInternalParams<R, A, Record<string, any>, Lowercase<M>>;
+        // body: TypedInternalBody<R, A, any, Lowercase<M>>;
+        // params: TypedInternalParams<R, A, Record<string, any>, Lowercase<M>>;
       }
     >
   ): Promise<
@@ -77,11 +77,11 @@ export interface InternalApi {
   // TODO: remove all of this
   "/api/v1": {
     get: {
-      response: { user: string; method: "get" };
+      response: void;
       request: { body: { name: string } };
     };
     post: {
-      response: { user: string; method: "post" };
+      response: never;
       request: {
         query: {
           limit: number;
@@ -263,15 +263,16 @@ export type TypedInternalResponse<
   ? // Allow user overrides
     Default
   : Route extends string
-    ? MiddlewareOf<Route, Method, A> extends never
-      ? MiddlewareOf<Route, "default", A> extends never
-        ? // Bail if only types are Error or void (for example, from middleware)
-          Default
-        : MiddlewareOf<Route, "default", A> extends { response: infer T }
-          ? T
-          : Default
-      : MiddlewareOf<Route, Method, A> extends { response: infer T }
-        ? T
+    ? Method extends keyof A[MatchedRoutes<Route, A>]
+      ? A[MatchedRoutes<Route, A>][Method] extends { response: infer T }
+        ? T extends never
+          ? Default
+          : T
+        : Default
+      : A[MatchedRoutes<Route, A>]["default"] extends { response: infer T }
+        ? T extends never
+          ? Default
+          : T
         : Default
     : Default;
 
@@ -280,37 +281,20 @@ export type TypedInternalQuery<
   A extends object,
   Default,
   Method extends RouterMethod = RouterMethod,
-> = Route extends string
-  ? MiddlewareOf<Route, Method, A> extends undefined
-    ? MiddlewareOf<Route, "default", A> extends undefined
-      ? // Bail if only types are Error or void (for example, from middleware)
-        Default
-      : MiddlewareOf<Route, "default", A> extends {
+> = Default extends Record<string, any>
+  ? Route extends string
+    ? Method extends keyof A[MatchedRoutes<Route, A>]
+      ? A[MatchedRoutes<Route, A>][Method] extends {
+          request: { query: infer T };
+        }
+        ? T
+        : Default
+      : A[MatchedRoutes<Route, A>]["default"] extends {
             request: { query: infer T };
           }
         ? T
         : Default
-    : MiddlewareOf<Route, Method, A> extends { request: { query: infer T } }
-      ? T
-      : Default
-  : Default;
-
-export type TypedInternalBody<
-  Route,
-  A extends object,
-  Default,
-  Method extends RouterMethod = RouterMethod,
-> = Route extends string
-  ? MiddlewareOf<Route, Method, A> extends undefined
-    ? MiddlewareOf<Route, "default", A> extends undefined
-      ? // Bail if only types are Error or void (for example, from middleware)
-        Default
-      : MiddlewareOf<Route, "default", A> extends { request: { body: infer T } }
-        ? T
-        : Default
-    : MiddlewareOf<Route, Method, A> extends { request: { body: infer T } }
-      ? T
-      : Default
+    : Default
   : Default;
 
 export type TypedInternalParams<
@@ -318,20 +302,43 @@ export type TypedInternalParams<
   A extends object,
   Default,
   Method extends RouterMethod = RouterMethod,
-> = Route extends string
-  ? MiddlewareOf<Route, Method, A> extends undefined
-    ? MiddlewareOf<Route, "default", A> extends undefined
-      ? // Bail if only types are Error or void (for example, from middleware)
-        Default
-      : MiddlewareOf<Route, "default", A> extends {
+> = Default extends Record<string, any>
+  ? Route extends string
+    ? Method extends keyof A[MatchedRoutes<Route, A>]
+      ? A[MatchedRoutes<Route, A>][Method] extends {
+          request: { params: infer T };
+        }
+        ? T
+        : Default
+      : A[MatchedRoutes<Route, A>]["default"] extends {
             request: { params: infer T };
           }
         ? T
         : Default
-    : MiddlewareOf<Route, Method, A> extends { request: { params: infer T } }
-      ? T
-      : Default
+    : Default
   : Default;
+
+export type TypedInternalBody<
+  Route,
+  A extends object,
+  Default = unknown,
+  Method extends RouterMethod = RouterMethod,
+> = Default extends string | boolean | number | null | void | object
+  ? // Allow user overrides
+    Default
+  : Route extends string
+    ? Method extends keyof A[MatchedRoutes<Route, A>]
+      ? A[MatchedRoutes<Route, A>][Method] extends {
+          request: { body: infer T };
+        }
+        ? T
+        : Default
+      : A[MatchedRoutes<Route, A>]["default"] extends {
+            request: { body: infer T };
+          }
+        ? T
+        : Default
+    : Default;
 
 // Extracts the available http methods based on the route.
 // Defaults to all methods if there aren't any methods available or if there is a catch-all route.
@@ -461,11 +468,3 @@ export type MatchedRoutes<
           >["key"]
         | Extract<Matches, { catchAll: true }>["key"] // partial, glob and catchAll matches
     : Extract<Matches, { exact: true }>["key"]; // exact matches
-
-export type MiddlewareOf<
-  Route extends string,
-  Method extends RouterMethod | "default",
-  A extends object,
-> = Method extends keyof A[MatchedRoutes<Route, A>]
-  ? Exclude<A[MatchedRoutes<Route, A>][Method], Error | void>
-  : never;
