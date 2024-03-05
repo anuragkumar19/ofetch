@@ -248,7 +248,11 @@ export type TypedInternalQuery<
         request: { query: infer T };
       }
       ? T
-      : Default
+      : A[MatchedRoutes<Route, A>]["default"] extends {
+            request: { query: infer T };
+          }
+        ? T
+        : Default
     : A[MatchedRoutes<Route, A>]["default"] extends {
           request: { query: infer T };
         }
@@ -267,7 +271,11 @@ export type TypedInternalParams<
         request: { params: infer T };
       }
       ? T
-      : Default
+      : A[MatchedRoutes<Route, A>]["default"] extends {
+            request: { params: infer T };
+          }
+        ? T
+        : Default
     : A[MatchedRoutes<Route, A>]["default"] extends {
           request: { params: infer T };
         }
@@ -286,7 +294,11 @@ export type TypedInternalBody<
         request: { body: infer T };
       }
       ? T
-      : Default
+      : A[MatchedRoutes<Route, A>]["default"] extends {
+            request: { body: infer T };
+          }
+        ? T
+        : Default
     : A[MatchedRoutes<Route, A>]["default"] extends {
           request: { body: infer T };
         }
