@@ -2,8 +2,10 @@
 // $fetch API
 // --------------------------
 
+export type _DefaultT = any;
+
 // TODO: set default to any for backward compatibility
-export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
+export interface $Fetch<DefaultT = _DefaultT, A extends object = InternalApi> {
   <
     T = DefaultT,
     ResT extends ResponseType = "json",
@@ -90,7 +92,10 @@ export interface FetchOptions<
   // eslint-disable-next-line @typescript-eslint/ban-types
   O extends object = {},
 > extends Omit<RequestInit, "body"> {
-  method?: O extends { method: infer M } ? M : RequestInit["method"];
+  method?: O extends { method: infer M }
+    ? // eslint-disable-next-line @typescript-eslint/ban-types
+      M | (string & {})
+    : RequestInit["method"];
   baseURL?: string;
   body?: O extends { body: infer B }
     ? B
@@ -218,7 +223,7 @@ export type RouterMethod = Lowercase<HTTPMethod>;
 export type TypedInternalResponse<
   Route,
   A extends object,
-  Default = unknown,
+  Default = _DefaultT,
   Method extends RouterMethod = RouterMethod,
 > = Default extends string | boolean | number | null | void | object
   ? // Allow user overrides
