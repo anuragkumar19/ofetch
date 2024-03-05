@@ -2,6 +2,7 @@
 // $fetch API
 // --------------------------
 
+// TODO: set default to any for backward compatibility
 export interface $Fetch<DefaultT = unknown, A extends object = InternalApi> {
   <
     T = DefaultT,
@@ -241,7 +242,7 @@ export type TypedInternalQuery<
   A extends object,
   Default,
   Method extends RouterMethod = RouterMethod,
-> = Route extends string
+> = Route extends string // TODO: Allow user overrides
   ? Method extends keyof A[MatchedRoutes<Route, A>]
     ? A[MatchedRoutes<Route, A>][Method] extends {
         request: { query: infer T };
@@ -260,7 +261,7 @@ export type TypedInternalParams<
   A extends object,
   Default,
   Method extends RouterMethod = RouterMethod,
-> = Route extends string
+> = Route extends string // TODO: Allow user overrides
   ? Method extends keyof A[MatchedRoutes<Route, A>]
     ? A[MatchedRoutes<Route, A>][Method] extends {
         request: { params: infer T };
@@ -279,7 +280,7 @@ export type TypedInternalBody<
   A extends object,
   Default,
   Method extends RouterMethod = RouterMethod,
-> = Route extends string
+> = Route extends string // TODO: Allow user overrides
   ? Method extends keyof A[MatchedRoutes<Route, A>]
     ? A[MatchedRoutes<Route, A>][Method] extends {
         request: { body: infer T };
@@ -295,6 +296,7 @@ export type TypedInternalBody<
 
 // Extract the route method from options which might be undefined or without a method parameter.
 export type ExtractedRouteMethod<
+  // TODO: improvement needed
   A extends object,
   R extends ExtendedFetchRequest<A>,
 > = R extends string
